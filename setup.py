@@ -10,7 +10,7 @@ setup(
     author_email='dgu@cs.stanford.edu',
     url='http://www.dound.com/projects/python/ltprotocol/',
     packages=find_packages(exclude='tests'),
-    long_description="""
+    long_description="""\
 Provides a Twisted-based client and server implementation for protocols which
 begin with a legnth and type field.  Create your protocol by constructing an
 LTProtocol with a list of LTMessage objects which specify your protocol.  Use
