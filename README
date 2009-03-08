@@ -1,0 +1,23 @@
+= ltprotocol =
+
+LTProtocol is a Twisted library extension written in Python. It provides a
+Twisted-based client and server implementation for protocols which begin with a
+length and type field.
+
+Create your protocol by constructing an LTProtocol with a list of LTMessage
+objects which specify your protocol.  Use LTTwistedServer and LTTwistedClient to
+create a server or client.  You may wish to subclass these classes in order to
+take custom actions when a client connects or disconnects.
+
+The page at [http://www.dound.com/projects/python/ltprotocol/] is the most
+current source of information.  Please email dgu@cs.stanford.edu with any
+questions, patches, or general discussion.
+
+== requirements ===
+
+LTProtocol runs on Python version 2.5 or greater, with the following dependencies:
+* [http://pypi.python.org/pypi/Twisted/8.2.0]
+
+== getting started ==
+
+Take a look at the examples in the examples directory.
