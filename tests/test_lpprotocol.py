@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# To try out this test, run both of the following:
+#     python test_lpprotocol.py server
+#     python test_lpprotocol.py client
 
 from ltprotocol.ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
 from twisted.internet import reactor
@@ -63,6 +66,8 @@ if __name__ == "__main__":
         server = LTTwistedServer(p, lambda m : print_ltm('server', m))
         server.listen(9999)
 
+        # check for new connections every 1 sec and send some data to the client
+        # before closing the connection
         def callback():
             if len(server.connections) > 0:
                 print 'sending ...'
