@@ -4,7 +4,7 @@ LTProtocol with a list of LTMessage objects which specify your protocol.  Use
 LTTwistedServer and LTTwistedClient to create a server or client.
 
 @author David Underhill
-@version 0.1 (2009-Mar-08)
+@version 0.1.2 (2009-Mar-08)
 """
 
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory

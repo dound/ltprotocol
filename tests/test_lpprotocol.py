@@ -58,7 +58,7 @@ if __name__ == "__main__":
         print >> sys.stderr, "TYPE must be client or server"
         sys.exit(-1)
 
-    p = LTProtocol([NumMsg, StrMsg])
+    p = LTProtocol([NumMsg, StrMsg], 'H', 'B')
     if what == "client":
         client = LTTwistedClient(p, lambda m : print_ltm('client', m))
         client.connect('127.0.0.1', 9999)
