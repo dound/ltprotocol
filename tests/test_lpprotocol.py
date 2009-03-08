@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
+from ltprotocol.ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
 from twisted.internet import reactor
 import struct, sys
 
