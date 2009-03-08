@@ -23,13 +23,6 @@ class LTMessage:
     def __init__(self):
         pass
 
-    def pack_with_header(self):
-        """Creates a packed byte-string of this message given the body.
-        @param body  packed byte-string representing the message body
-        """
-        body = self.pack()
-        return struct.pack('> 2I', len(body) + 8, self.get_type()) + body
-
     def pack(self):
         """Creates a packed byte-string of this message."""
         # Must be overridden by subclasses to return the packed message.
@@ -44,15 +37,28 @@ class LTMessage:
 class LTProtocol():
     """Defines a protocol whose messages are in the form length, type, and body."""
 
-    def __init__(self, msg_types):
+    def __init__(self, msg_types, len_type='H', type_type='B'):
         """Creates an LTProtocol which recognizes a the specified list of LTMessage classes.
 
         @param msg_types  list of LTMessage classes which this protocol includes
+        @param len_type   type of integer used for the length field (see struct doc for format chars)
+        @param type_type  type of integer used for the type field (see struct doc for format chars)
         """
         # maps message type numbers to LTMessageType objects
         self.msg_types = {}
         for ltm in msg_types:
             self.msg_types[ltm.get_type()] = ltm
+        self.len_type = len_type
+        self.type_type = type_type
+
+    def pack_with_header(self, lmt):
+        """Creates a packed byte-string of this message given the body.
+        @param lmt  packed byte-string representing the message body
+        """
+        body = lmt.pack()
+        fmt = '> ' + self.len_type + self.type_type
+        sz = struct.calcsize(fmt) + len(body)
+        return struct.pack(fmt, sz, lmt.get_type()) + body
 
     def unpack_received_msg(self, type_val, body):
         """Returns the next fully-received message from sock, or None if the type is unknown."""
@@ -65,6 +71,7 @@ class LTTwistedProtocol(Protocol):
     """A Twisted protocol whose messages begin with length and type."""
     # live connections a server for this protocol is serving
     def __init__(self):
+        """Creates a """
         self.factory = None  # set when used by a factory
         self.buf_accum = ''
         self.packet = ""
@@ -74,9 +81,14 @@ class LTTwistedProtocol(Protocol):
         """Called when data is received on a connection."""
         self.packet += data
         self.plen += len(data)
+        len_fmt = "> " + self.factory.lt_protocol.len_type
+        len_fmt_sz = struct.calcsize(len_fmt)
+        type_fmt = "> " + self.factory.lt_protocol.type_type
+        type_fmt_sz = struct.calcsize(type_fmt)
+        tot_sz = len_fmt_sz + type_fmt_sz
 
-        while self.plen >= 4:
-            lenNeeded = struct.unpack("> I", self.packet[0:4])[0]
+        while self.plen >= len_fmt_sz:
+            lenNeeded = struct.unpack(len_fmt, self.packet[0:len_fmt_sz])[0]
 
             # process the packet if we have received the whole thing
             if self.plen >= lenNeeded:
@@ -85,8 +97,8 @@ class LTTwistedProtocol(Protocol):
                 self.plen -= lenNeeded
 
                 print 'unpacking packet of length %u' % lenNeeded
-                type_val = struct.unpack("> I", buf[4:8])[0]
-                lt_msg = self.factory.lt_protocol.unpack_received_msg(type_val, buf[8:])
+                type_val = struct.unpack(type_fmt, buf[len_fmt_sz:tot_sz])[0]
+                lt_msg = self.factory.lt_protocol.unpack_received_msg(type_val, buf[tot_sz:])
                 self.factory.recv_callback(lt_msg)
             else:
                 # not enough bytes for a full packet yet
@@ -189,12 +201,12 @@ class LTTwistedServer(Factory):
 
     def send(self, ltm):
         """Sends a LTMessage to all connected clients."""
-        buf = ltm.pack_with_header()
+        buf = self.lt_protocol.pack_with_header(ltm)
         for conn in self.connections:
             conn.transport.write(buf)
             print '  sent %s' % str(ltm)
 
     def send_msg_to_client(self, conn, ltm):
         """Sends a LTMessage to the specified client connection."""
-        buf = ltm.pack_with_header()
+        buf = self.lt_protocol.pack_with_header(ltm)
         conn.transport.write(buf)
