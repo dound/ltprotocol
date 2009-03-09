@@ -4,7 +4,7 @@ LTProtocol with a list of LTMessage objects which specify your protocol.  Use
 LTTwistedServer and LTTwistedClient to create a server or client.
 
 @author David Underhill
-@version 0.1.4 (2009-Mar-08)
+@version 0.1.5 (2009-Mar-09)
 """
 
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory
@@ -98,7 +98,7 @@ class LTTwistedProtocol(Protocol):
 
                 type_val = struct.unpack(type_fmt, buf[len_fmt_sz:tot_sz])[0]
                 lt_msg = self.factory.lt_protocol.unpack_received_msg(type_val, buf[tot_sz:])
-                self.factory.recv_callback(lt_msg)
+                self.factory.recv_callback(self.transport, lt_msg)
             else:
                 # not enough bytes for a full packet yet
                 break
@@ -132,7 +132,7 @@ class LTTwistedClient(ReconnectingClientFactory):
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
-                              one argument (an LTMessage object)
+                              two arguments (a transport object (the channel) and an LTMessage object)
 
         @return  the client factory (has a field connections with a list of active connections)
         """
@@ -182,7 +182,7 @@ class LTTwistedServer(Factory):
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
-                              one argument (an LTMessage object)
+                              two arguments (a transport object (the channel) and an LTMessage object)
 
         @return  the server factory (has a field connections with a list of active connections)
         """

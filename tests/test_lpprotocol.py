@@ -3,7 +3,7 @@
 #     python test_lpprotocol.py server
 #     python test_lpprotocol.py client
 
-from ltprotocol.ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
+from ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
 from twisted.internet import reactor
 import struct, sys
 
@@ -45,8 +45,14 @@ class StrMsg(LTMessage):
     def __str__(self):
         return self.str
 
-def print_ltm(prefix, ltm):
+TEST_PROTOCOL = LTProtocol([NumMsg, StrMsg], 'H', 'B')
+response_sent = False
+def print_ltm(prefix, transport, ltm):
+    global response_sent
     print '%s got: %s' % (prefix, str(ltm))
+    if not response_sent:
+        transport.write(TEST_PROTOCOL.pack_with_header(NumMsg(100)))
+        response_sent = True
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -58,12 +64,11 @@ if __name__ == "__main__":
         print >> sys.stderr, "TYPE must be client or server"
         sys.exit(-1)
 
-    p = LTProtocol([NumMsg, StrMsg], 'H', 'B')
     if what == "client":
-        client = LTTwistedClient(p, lambda m : print_ltm('client', m))
+        client = LTTwistedClient(TEST_PROTOCOL, lambda t, m : print_ltm('client', t, m))
         client.connect('127.0.0.1', 9999)
     else:
-        server = LTTwistedServer(p, lambda m : print_ltm('server', m))
+        server = LTTwistedServer(TEST_PROTOCOL, lambda t, m : print_ltm('server', t, m))
         server.listen(9999)
 
         # check for new connections every 1 sec and send some data to the client
@@ -74,8 +79,6 @@ if __name__ == "__main__":
                 server.send(NumMsg(200))
                 server.send(StrMsg("hello world!"))
                 server.send(NumMsg(7))
-                for c in server.connections:
-                    c.transport.loseConnection()
             reactor.callLater(1, callback)
         reactor.callLater(1, callback)
 
