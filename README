@@ -23,6 +23,12 @@ LTProtocol runs on Python version 2.5 or greater, with the following dependencie
 Take a look at the examples in the examples directory.
 
 == changelog ==
+v0.1.6 (2009-Apr-19):
+ * added optional callback for when a client connections to the server
+
+v0.1.5 (2009-Mar-09):
+ * added param to recv_callback: transport layer
+
 v0.1.4:
  * Removed extraneous print statement
 
