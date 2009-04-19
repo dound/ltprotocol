@@ -4,7 +4,7 @@ LTProtocol with a list of LTMessage objects which specify your protocol.  Use
 LTTwistedServer and LTTwistedClient to create a server or client.
 
 @author David Underhill
-@version 0.1.5 (2009-Mar-09)
+@version 0.1.6 (2009-Apr-19)
 """
 
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory
@@ -115,6 +115,7 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
+        self.factory.new_conn_callback(self)
 
     def connectionLost(self, reason):
         """Called when a connection is terminated."""
@@ -177,17 +178,19 @@ class LTTwistedServer(Factory):
     """A twisted-based server for protocols which begin with length and type."""
     protocol = LTTwistedServerProtocol
 
-    def __init__(self, lt_protocol, recv_callback):
+    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None):
         """Creates an Twisted server factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
+        @param new_conn_callback  called with one argument (a connection) when a new connection is made
 
         @return  the server factory (has a field connections with a list of active connections)
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
+        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda c : None
         self.connections = []
         self.numProtocols = 0
 
