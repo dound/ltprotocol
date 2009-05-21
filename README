@@ -20,9 +20,20 @@ LTProtocol runs on Python version 2.5 or greater, with the following dependencie
 
 == getting started ==
 
-Take a look at the examples in the examples directory.
+Take a look at the example at [http://dound.com/projects/python/ltprotocol/].
 
 == changelog ==
+v0.1.8 (2009-May-21):
+
+ * move send() method so it is added all new LTTwistedProtocol objects (on
+   connection initiation) rather than only adding it to server-side
+   LTTwistedProtocol objects
+ * extensibility fix: LTTwistedClient created a generic protocol instantiation
+   rather than the specific one it was a client for
+ * Typo fix in print statement
+ * Thanks to Glen Gibb for suggestions for the above patches
+ * Add option to turn off verbose printing
+
 v0.1.7 (2009-May-01):
  * added send() method to connection object to make it easy to send messages
    from a connection without needing a reference to its parent server
