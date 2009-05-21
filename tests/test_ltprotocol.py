@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # To try out this test, run both of the following:
-#     python test_lpprotocol.py server
-#     python test_lpprotocol.py client
+#     python test_ltprotocol.py server
+#     python test_ltprotocol.py client
 
 from ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
 from twisted.internet import reactor
