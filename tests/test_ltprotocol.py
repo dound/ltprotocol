@@ -3,7 +3,7 @@
 #     python test_ltprotocol.py server
 #     python test_ltprotocol.py client
 
-from ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
+from ltprotocol.ltprotocol import LTMessage, LTProtocol, LTTwistedClient, LTTwistedServer
 from twisted.internet import reactor
 import struct, sys
 
