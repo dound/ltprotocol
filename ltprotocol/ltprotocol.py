@@ -164,7 +164,7 @@ class LTTwistedClient(ReconnectingClientFactory):
 
         # once we successfully connect, reset the retry wait time
         self.resetDelay()
-        proto = LTTwistedProtocol()
+        proto = self.protocol()
         proto.factory = self
         return proto
 
