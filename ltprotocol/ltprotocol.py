@@ -77,6 +77,10 @@ class LTTwistedProtocol(Protocol):
         self.packet = ""
         self.plen = 0
 
+    def connectionMade(self):
+        # add function to transport so it is easy to send an LTProtocol message with it
+        self.transport.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
+
     def dataReceived(self, data):
         """Called when data is received on a connection."""
         self.packet += data
@@ -112,9 +116,6 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
         self.factory.numProtocols = self.factory.numProtocols + 1
         fmt = "Client has connected to the LTProtocol server (%u update connections now live)"
         print fmt % self.factory.numProtocols
-
-        # add function to transport so it is easy to send an LTProtocol message with it
-        self.transport.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
