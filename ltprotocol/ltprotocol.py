@@ -108,14 +108,16 @@ class LTTwistedProtocol(Protocol):
                 break
 
 class LTTwistedServerProtocol(LTTwistedProtocol):
-    def __init__(self):
+    def __init__(self, verbose=True):
         LTTwistedProtocol.__init__(self)
+        self.verbose = verbose
 
     def connectionMade(self):
         """Called when a new connection is setup."""
         self.factory.numProtocols = self.factory.numProtocols + 1
-        fmt = "Client has connected to the LTProtocol server (%u update connections now live)"
-        print fmt % self.factory.numProtocols
+        if self.verbose:
+            fmt = "Client has connected to the LTProtocol server (%u update connections now live)"
+            print fmt % self.factory.numProtocols
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
@@ -124,20 +126,22 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
     def connectionLost(self, reason):
         """Called when a connection is terminated."""
         self.factory.numProtocols = self.factory.numProtocols - 1
-        fmt = "LTProtocl server connection to client lost (%u update connections now live): %s"
-        print fmt % (self.factory.numProtocols, reason.getErrorMessage())
+        if self.verbose:
+            fmt = "LTProtocl server connection to client lost (%u update connections now live): %s"
+            print fmt % (self.factory.numProtocols, reason.getErrorMessage())
         self.factory.connections.remove(self)
 
 class LTTwistedClient(ReconnectingClientFactory):
     """A twisted-based client for protocols which begin with length and type."""
     protocol = LTTwistedProtocol
 
-    def __init__(self, lt_protocol, recv_callback):
+    def __init__(self, lt_protocol, recv_callback, verbose=True):
         """Creates an Twisted client factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
+        @param verbose        whether to print messages about connection status changing
 
         @return  the client factory (has a field connections with a list of active connections)
         """
@@ -147,6 +151,7 @@ class LTTwistedClient(ReconnectingClientFactory):
         self.port = None
         self.packet = ""
         self.plen = 0
+        self.verbose = verbose
 
     def connect(self, ip, port):
         self.ip = ip
@@ -154,13 +159,15 @@ class LTTwistedClient(ReconnectingClientFactory):
         reactor.connectTCP(ip, port, self)
 
     def startedConnecting(self, _):
-        print 'Trying to connect to LT server at %s:%s' % (str(self.ip), str(self.port))
+        if self.verbose:
+            print 'Trying to connect to LT server at %s:%s' % (str(self.ip), str(self.port))
 
     def buildProtocol(self, _):
         # reset the packet buffer whenever we renew the connection
         self.packet = ""
         self.plen = 0
-        print 'Connected to the server at %s:%s' % (str(self.ip), str(self.port))
+        if self.verbose:
+            print 'Connected to the server at %s:%s' % (str(self.ip), str(self.port))
 
         # once we successfully connect, reset the retry wait time
         self.resetDelay()
@@ -169,26 +176,29 @@ class LTTwistedClient(ReconnectingClientFactory):
         return proto
 
     def clientConnectionLost(self, connector, reason):
-        fmt = 'Connection to the server at %s:%s lost: %s'
-        print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
+        if self.verbose:
+            fmt = 'Connection to the server at %s:%s lost: %s'
+            print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
-        fmt = 'Connection to the server at %s:%s failed: %s'
-        print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
+        if self.verbose:
+            fmt = 'Connection to the server at %s:%s failed: %s'
+            print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 class LTTwistedServer(Factory):
     """A twisted-based server for protocols which begin with length and type."""
     protocol = LTTwistedServerProtocol
 
-    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None):
+    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None, verbose=True):
         """Creates an Twisted server factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
         @param new_conn_callback  called with one argument (a connection) when a new connection is made
+        @param verbose        whether to print messages when they are sent
 
         @return  the server factory (has a field connections with a list of active connections)
         """
@@ -197,6 +207,7 @@ class LTTwistedServer(Factory):
         self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda c : None
         self.connections = []
         self.numProtocols = 0
+        self.verbose = verbose
 
     def listen(self, port):
         """Starts this Twisted server listening on the specified port.
@@ -210,7 +221,8 @@ class LTTwistedServer(Factory):
         buf = self.lt_protocol.pack_with_header(ltm)
         for conn in self.connections:
             conn.transport.write(buf)
-            print '  sent %s' % str(ltm)
+            if self.verbose:
+                print '  sent %s' % str(ltm)
 
     def send_msg_to_client(self, conn, ltm):
         """Sends a LTMessage to the specified client connection."""
