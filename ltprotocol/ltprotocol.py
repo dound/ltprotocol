@@ -168,12 +168,12 @@ class LTTwistedClient(ReconnectingClientFactory):
         return proto
 
     def clientConnectionLost(self, connector, reason):
-        fmt = 'Connection to the Laptop at %s:%s lost: %s'
+        fmt = 'Connection to the server at %s:%s lost: %s'
         print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
-        fmt = 'Connection to the Laptop at %s:%s failed: %s'
+        fmt = 'Connection to the server at %s:%s failed: %s'
         print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
