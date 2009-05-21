@@ -23,6 +23,10 @@ LTProtocol runs on Python version 2.5 or greater, with the following dependencie
 Take a look at the examples in the examples directory.
 
 == changelog ==
+v0.1.7 (2009-May-01):
+ * added send() method to connection object to make it easy to send messages
+   from a connection without needing a reference to its parent server
+
 v0.1.6 (2009-Apr-19):
  * added optional callback for when a client connections to the server
 

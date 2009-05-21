@@ -1,3 +1,3 @@
 """\
-ltprotocol v0.1.6 package.
+ltprotocol v0.1.7 package.
 """

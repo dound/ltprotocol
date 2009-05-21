@@ -4,7 +4,7 @@ LTProtocol with a list of LTMessage objects which specify your protocol.  Use
 LTTwistedServer and LTTwistedClient to create a server or client.
 
 @author David Underhill
-@version 0.1.6 (2009-Apr-19)
+@version 0.1.7 (2009-May-01)
 """
 
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory
@@ -112,6 +112,9 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
         self.factory.numProtocols = self.factory.numProtocols + 1
         fmt = "Client has connected to the LTProtocol server (%u update connections now live)"
         print fmt % self.factory.numProtocols
+
+        # add function to transport so it is easy to send an LTProtocol message with it
+        self.transport.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
