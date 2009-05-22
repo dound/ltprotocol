@@ -46,8 +46,7 @@ class StrMsg(LTMessage):
         return self.str
 
 TEST_PROTOCOL = LTProtocol([NumMsg, StrMsg], 'H', 'B')
-def print_ltm(prefix, transport, ltm):
-    global response_sent
+def print_ltm(prefix, proto, ltm):
     print '%s got: %s' % (prefix, str(ltm))
 
 if __name__ == "__main__":
@@ -62,17 +61,18 @@ if __name__ == "__main__":
 
     # periodically sends some messages
     def periodic_send(c):
-        print 'sending ...'
-        c.send(NumMsg(200))
-        c.send(StrMsg("hello world!"))
-        c.send(NumMsg(7))
-        reactor.callLater(1, lambda : periodic_send(c))
+        if c.connected:
+            print 'sending ...'
+            c.send(NumMsg(200))
+            c.send(StrMsg("hello world!"))
+            c.send(NumMsg(7))
+            reactor.callLater(1, lambda : periodic_send(c))
 
     if what == "client":
-        client = LTTwistedClient(TEST_PROTOCOL, lambda t, m : print_ltm('client', t, m))
+        client = LTTwistedClient(TEST_PROTOCOL, lambda p, m : print_ltm('client', p, m))
         client.connect('127.0.0.1', 9999)
     else:
-        server = LTTwistedServer(TEST_PROTOCOL, lambda t, m : print_ltm('server', t, m), periodic_send)
+        server = LTTwistedServer(TEST_PROTOCOL, lambda p, m : print_ltm('server', p, m), periodic_send)
         server.listen(9999)
 
     reactor.run()
