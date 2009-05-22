@@ -87,6 +87,7 @@ class LTTwistedProtocol(Protocol):
     def connectionLost(self, reason):
         """Note that this protocol is no longer connected."""
         self.connected = False
+        self.factory.lost_conn_callback(self)
 
     def dataReceived(self, data):
         """Called when data is received on a connection."""
@@ -147,20 +148,24 @@ class LTTwistedClient(ReconnectingClientFactory):
     """A twisted-based client for protocols which begin with length and type."""
     protocol = LTTwistedProtocol
 
-    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None, verbose=True):
+    def __init__(self, lt_protocol, recv_callback,
+                 new_conn_callback=None, lost_conn_callback=None,
+                 verbose=True):
         """Creates an Twisted client factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
-        @param new_conn_callback  called with one argument (a connection) when a new connection is made
+        @param new_conn_callback  called with one argument (a LTProtocol) when a new connection is made
+        @param lost_conn_callback  called with one argument (a LTProtocol) when a connection is lost
         @param verbose        whether to print messages about connection status changing
 
         @return  the client factory (has a field connections with a list of active connections)
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
-        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda c : None
+        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda p : None
+        self.lost_conn_callback = lost_conn_callback if lost_conn_callback is not None else lambda p : None
         self.ip = None
         self.port = None
         self.packet = ""
@@ -205,20 +210,24 @@ class LTTwistedServer(Factory):
     """A twisted-based server for protocols which begin with length and type."""
     protocol = LTTwistedServerProtocol
 
-    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None, verbose=True):
+    def __init__(self, lt_protocol, recv_callback,
+                 new_conn_callback=None, lost_conn_callback=None,
+                 verbose=True):
         """Creates an Twisted server factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
         @param new_conn_callback  called with one argument (a connection) when a new connection is made
+        @param lost_conn_callback  called with one argument (a LTProtocol) when a connection is lost
         @param verbose        whether to print messages when they are sent
 
         @return  the server factory (has a field connections with a list of active connections)
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
-        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda c : None
+        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda p : None
+        self.lost_conn_callback = lost_conn_callback if lost_conn_callback is not None else lambda p : None
         self.connections = []
         self.numProtocols = 0
         self.verbose = verbose
