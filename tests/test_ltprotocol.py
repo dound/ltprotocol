@@ -46,13 +46,9 @@ class StrMsg(LTMessage):
         return self.str
 
 TEST_PROTOCOL = LTProtocol([NumMsg, StrMsg], 'H', 'B')
-response_sent = False
 def print_ltm(prefix, transport, ltm):
     global response_sent
     print '%s got: %s' % (prefix, str(ltm))
-    if not response_sent:
-        transport.write(TEST_PROTOCOL.pack_with_header(NumMsg(100)))
-        response_sent = True
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -64,22 +60,19 @@ if __name__ == "__main__":
         print >> sys.stderr, "TYPE must be client or server"
         sys.exit(-1)
 
+    # periodically sends some messages
+    def periodic_send(c):
+        print 'sending ...'
+        c.send(NumMsg(200))
+        c.send(StrMsg("hello world!"))
+        c.send(NumMsg(7))
+        reactor.callLater(1, lambda : periodic_send(c))
+
     if what == "client":
         client = LTTwistedClient(TEST_PROTOCOL, lambda t, m : print_ltm('client', t, m))
         client.connect('127.0.0.1', 9999)
     else:
-        server = LTTwistedServer(TEST_PROTOCOL, lambda t, m : print_ltm('server', t, m))
+        server = LTTwistedServer(TEST_PROTOCOL, lambda t, m : print_ltm('server', t, m), periodic_send)
         server.listen(9999)
-
-        # check for new connections every 1 sec and send some data to the client
-        # before closing the connection
-        def callback():
-            if len(server.connections) > 0:
-                print 'sending ...'
-                server.send(NumMsg(200))
-                server.send(StrMsg("hello world!"))
-                server.send(NumMsg(7))
-            reactor.callLater(1, callback)
-        reactor.callLater(1, callback)
 
     reactor.run()
