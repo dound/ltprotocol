@@ -63,13 +63,13 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     # periodically sends some messages
-    def periodic_send(c):
-        if c.connected:
+    def periodic_send(proto):
+        if proto.connected:
             print 'sending ...'
-            c.send(NumMsg(200))
-            c.send(StrMsg("hello world!"))
-            c.send(NumMsg(7))
-            reactor.callLater(1, lambda : periodic_send(c))
+            proto.send(NumMsg(200))
+            proto.send(StrMsg("hello world!"))
+            proto.send(NumMsg(7))
+            reactor.callLater(1, lambda : periodic_send(proto))
 
     if what == "client":
         client = LTTwistedClient(TEST_PROTOCOL,
