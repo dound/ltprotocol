@@ -49,6 +49,9 @@ TEST_PROTOCOL = LTProtocol([NumMsg, StrMsg], 'H', 'B')
 def print_ltm(prefix, proto, ltm):
     print '%s got: %s' % (prefix, str(ltm))
 
+def print_disconnect(proto):
+    print 'disconnected!'
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print >> sys.stderr, "usage: ./test_ltprotocol.py TYPE"
@@ -69,10 +72,14 @@ if __name__ == "__main__":
             reactor.callLater(1, lambda : periodic_send(c))
 
     if what == "client":
-        client = LTTwistedClient(TEST_PROTOCOL, lambda p, m : print_ltm('client', p, m))
+        client = LTTwistedClient(TEST_PROTOCOL,
+                                 lambda p, m : print_ltm('client', p, m))
         client.connect('127.0.0.1', 9999)
     else:
-        server = LTTwistedServer(TEST_PROTOCOL, lambda p, m : print_ltm('server', p, m), periodic_send)
+        server = LTTwistedServer(TEST_PROTOCOL,
+                                 lambda p, m : print_ltm('server', p, m),
+                                 periodic_send,
+                                 print_disconnect)
         server.listen(9999)
 
     reactor.run()
