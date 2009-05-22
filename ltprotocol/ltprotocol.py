@@ -80,6 +80,7 @@ class LTTwistedProtocol(Protocol):
     def connectionMade(self):
         # add function to transport so it is easy to send an LTProtocol message with it
         self.transport.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
+        self.factory.new_conn_callback(self.transport)
 
     def dataReceived(self, data):
         """Called when data is received on a connection."""
@@ -121,7 +122,9 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
-        self.factory.new_conn_callback(self)
+
+        # let the super-class setup the send() method and issue new_conn_callback
+        LTTwistedProtocol.connectionMade(self)
 
     def connectionLost(self, reason):
         """Called when a connection is terminated."""
@@ -135,18 +138,20 @@ class LTTwistedClient(ReconnectingClientFactory):
     """A twisted-based client for protocols which begin with length and type."""
     protocol = LTTwistedProtocol
 
-    def __init__(self, lt_protocol, recv_callback, verbose=True):
+    def __init__(self, lt_protocol, recv_callback, new_conn_callback=None, verbose=True):
         """Creates an Twisted client factory for the specified lt_protocol.
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
                               two arguments (a transport object (the channel) and an LTMessage object)
+        @param new_conn_callback  called with one argument (a connection) when a new connection is made
         @param verbose        whether to print messages about connection status changing
 
         @return  the client factory (has a field connections with a list of active connections)
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
+        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda c : None
         self.ip = None
         self.port = None
         self.packet = ""
