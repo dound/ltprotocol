@@ -76,11 +76,17 @@ class LTTwistedProtocol(Protocol):
         self.buf_accum = ''
         self.packet = ""
         self.plen = 0
+        self.connected = False
 
     def connectionMade(self):
         # add function to transport so it is easy to send an LTProtocol message with it
-        self.transport.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
-        self.factory.new_conn_callback(self.transport)
+        self.connected = True
+        self.send = lambda ltm : self.transport.write(self.factory.lt_protocol.pack_with_header(ltm))
+        self.factory.new_conn_callback(self)
+
+    def connectionLost(self, reason):
+        """Note that this protocol is no longer connected."""
+        self.connected = False
 
     def dataReceived(self, data):
         """Called when data is received on a connection."""
@@ -103,7 +109,7 @@ class LTTwistedProtocol(Protocol):
 
                 type_val = struct.unpack(type_fmt, buf[len_fmt_sz:tot_sz])[0]
                 lt_msg = self.factory.lt_protocol.unpack_received_msg(type_val, buf[tot_sz:])
-                self.factory.recv_callback(self.transport, lt_msg)
+                self.factory.recv_callback(self, lt_msg)
             else:
                 # not enough bytes for a full packet yet
                 break
@@ -133,6 +139,9 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
             fmt = "LTProtocl server connection to client lost (%u update connections now live): %s"
             print fmt % (self.factory.numProtocols, reason.getErrorMessage())
         self.factory.connections.remove(self)
+
+        # let the super-class cleanup
+        LTTwistedProtocol.connectionLost(self, reason)
 
 class LTTwistedClient(ReconnectingClientFactory):
     """A twisted-based client for protocols which begin with length and type."""
