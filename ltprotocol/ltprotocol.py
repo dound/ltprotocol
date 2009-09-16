@@ -7,9 +7,11 @@ LTTwistedServer and LTTwistedClient to create a server or client.
 @version 0.2.0 (2009-May-21)
 """
 
+import logging
+import struct
+
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory
 from twisted.internet           import reactor
-import struct
 
 class LTMessage:
     """This class should be overridden to define specific messages which begin
@@ -129,7 +131,7 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
         self.factory.numProtocols = self.factory.numProtocols + 1
         if self.verbose:
             fmt = "Client has connected to the LTProtocol server (%u update connections now live)"
-            print fmt % self.factory.numProtocols
+            logging.info(fmt % self.factory.numProtocols)
 
         # give the parent a hook into into our TCP connection so it can send data
         self.factory.connections.append(self)
@@ -141,8 +143,8 @@ class LTTwistedServerProtocol(LTTwistedProtocol):
         """Called when a connection is terminated."""
         self.factory.numProtocols = self.factory.numProtocols - 1
         if self.verbose:
-            fmt = "LTProtocl server connection to client lost (%u update connections now live): %s"
-            print fmt % (self.factory.numProtocols, reason.getErrorMessage())
+            fmt = "LTProtocol server connection to client lost (%u update connections now live): %s"
+            logging.info(fmt % (self.factory.numProtocols, reason.getErrorMessage()))
         self.factory.connections.remove(self)
 
         # let the super-class cleanup
@@ -159,7 +161,7 @@ class LTTwistedClient(ReconnectingClientFactory):
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
-                              two arguments (a transport object (the channel) and an LTMessage object)
+                              two arguments (an LTTwistedProtocol object and an LTMessage object)
         @param new_conn_callback  called with one argument (a LTProtocol) when a new connection is made
         @param lost_conn_callback  called with one argument (a LTProtocol) when a connection is lost
         @param verbose        whether to print messages about connection status changing
@@ -183,14 +185,14 @@ class LTTwistedClient(ReconnectingClientFactory):
 
     def startedConnecting(self, _):
         if self.verbose:
-            print 'Trying to connect to LT server at %s:%s' % (str(self.ip), str(self.port))
+            logging.debug('Trying to connect to LT server at %s:%s' % (str(self.ip), str(self.port)))
 
     def buildProtocol(self, _):
         # reset the packet buffer whenever we renew the connection
         self.packet = ""
         self.plen = 0
         if self.verbose:
-            print 'Connected to the server at %s:%s' % (str(self.ip), str(self.port))
+            logging.info('Connected to the server at %s:%s' % (str(self.ip), str(self.port)))
 
         # once we successfully connect, reset the retry wait time
         self.resetDelay()
@@ -201,13 +203,13 @@ class LTTwistedClient(ReconnectingClientFactory):
     def clientConnectionLost(self, connector, reason):
         if self.verbose:
             fmt = 'Connection to the server at %s:%s lost: %s'
-            print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
+            logging.info(fmt % (str(self.ip), str(self.port), reason.getErrorMessage()))
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
         if self.verbose:
             fmt = 'Connection to the server at %s:%s failed: %s'
-            print fmt % (str(self.ip), str(self.port), reason.getErrorMessage())
+            logging.info(fmt % (str(self.ip), str(self.port), reason.getErrorMessage()))
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 class LTTwistedServer(Factory):
@@ -221,7 +223,7 @@ class LTTwistedServer(Factory):
 
         @param lt_protocol    the LTProtocol protocol class the server uses to communicate
         @param recv_callback  the function to call when a message is received; it must take
-                              two arguments (a transport object (the channel) and an LTMessage object)
+                              two arguments (an LTTwistedProtocol object and an LTMessage object)
         @param new_conn_callback  called with one argument (a connection) when a new connection is made
         @param lost_conn_callback  called with one argument (a LTProtocol) when a connection is lost
         @param verbose        whether to print messages when they are sent
@@ -249,7 +251,7 @@ class LTTwistedServer(Factory):
         for conn in self.connections:
             conn.transport.write(buf)
             if self.verbose:
-                print '  sent %s' % str(ltm)
+                logging.debug('  sent %s' % str(ltm))
 
     def send_msg_to_client(self, conn, ltm):
         """Sends a LTMessage to the specified client connection."""
