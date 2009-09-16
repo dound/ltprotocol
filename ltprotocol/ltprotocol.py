@@ -115,6 +115,10 @@ class LTTwistedProtocol(Protocol):
                 # not enough bytes for a full packet yet
                 break
 
+    def __str__(self):
+        """Returns a string representation of the peer's information."""
+        return str(self.transport.getPeer())
+
 class LTTwistedServerProtocol(LTTwistedProtocol):
     def __init__(self, verbose=True):
         LTTwistedProtocol.__init__(self)
