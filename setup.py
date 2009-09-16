@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ltprotocol',
-    version='0.2.0',
+    version='0.2.1',
     description='Twisted-based client and server for protocols which begin with a length and type field',
     author='David Underhill',
     author_email='dgu@cs.stanford.edu',

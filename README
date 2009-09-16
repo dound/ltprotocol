@@ -23,6 +23,10 @@ LTProtocol runs on Python version 2.5 or greater, with the following dependencie
 Take a look at the example at [http://dound.com/projects/python/ltprotocol/].
 
 == changelog ==
+v0.2.1 (2009-Sep-15):
+ * Logging module now used in place of print calls
+ * Added __str__() method for LTProtocol
+
 v0.2.0 (2009-May-21):
  * LTTwistedClient now has a newly connected callback to match LTTwistedServer
  * Added optional callback which is fired when a connection is lost

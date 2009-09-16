@@ -4,7 +4,7 @@ LTProtocol with a list of LTMessage objects which specify your protocol.  Use
 LTTwistedServer and LTTwistedClient to create a server or client.
 
 @author David Underhill
-@version 0.2.0 (2009-May-21)
+@version 0.2.1 (2009-Sep-15)
 """
 
 import logging
