@@ -122,7 +122,7 @@ class LTTwistedProtocol(Protocol):
         return str(self.transport.getPeer())
 
 class LTTwistedServerProtocol(LTTwistedProtocol):
-    def __init__(self, verbose=True):
+    def __init__(self, verbose = False):
         LTTwistedProtocol.__init__(self)
         self.verbose = verbose
 
