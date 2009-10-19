@@ -8,6 +8,7 @@ LTTwistedServer and LTTwistedClient to create a server or client.
 """
 
 import logging
+import socket
 import struct
 
 from twisted.internet.protocol  import Protocol, ReconnectingClientFactory, Factory
@@ -69,6 +70,137 @@ class LTProtocol:
             return self.msg_types[type_val].unpack(body)
         else:
             return None # unknown message type
+
+class LTProtocolPB(LTProtocol):
+    """Defines an LTProtocol object for Protocol Buffers."""
+
+    def __init__(self, msgs_in, msgs_out, len_type='H', type_type='B'):
+        """Creates an LTProtocol which recognizes the specified lists of
+        Protocol Buffer classes.
+
+        @param msgs_in    list of input protobuf classes
+        @param msgs_out   list of output protobuf classes
+        @param len_type   type of integer used for the length field
+                          (see Python struct doc for format chars)
+        @param type_type  type of integer used for the type field
+                          (see Python struct doc for format chars)
+        """
+        self.msgs_in = msgs_in
+        self.msg_in_to_type = {}
+        for i, msg in enumerate(msgs_in):
+            self.msg_in_to_type[msg] = i
+        self.msgs_out = msgs_out
+        self.msg_out_to_type = {}
+        for i, msg in enumerate(msgs_out):
+            self.msg_out_to_type[msg] = i
+        self.len_type = len_type
+        self.type_type = type_type
+
+    def _get_type_in(self, msg):
+        """Get type of Protocol Buffer class"""
+        if msg in self.msg_in_to_type:
+            return self.msg_in_to_type[msg]
+        else:
+            raise Exception("Unknown input class type: %s" % type(msg))
+
+    def _get_type_out(self, msg):
+        """Get type of class"""
+        if msg in self.msg_out_to_type:
+            return self.msg_out_to_type[msg]
+        else:
+            raise Exception("Unknown output class type: %s" % type(msg))
+
+    def pack_with_header(self, msg):
+        """Creates a packed byte-string of this message given the body.
+
+        @param msg  Protobuf object
+        """
+        body = msg.SerializeToString()
+        fmt = '> ' + self.len_type + self.type_type
+        sz = struct.calcsize(fmt) + len(body)
+        msg_type = self._get_type_out(msg.__class__)
+        return struct.pack(fmt, sz, msg_type) + body
+
+    def unpack_received_msg(self, type_val, body):
+        """Returns the next fully-received message from sock, or None if the type is unknown."""
+        if type_val in range(len(self.msgs_in)):
+            msg = self.msgs_in[type_val]()
+            msg.ParseFromString(body)
+            return msg
+        else:
+            raise Exception("Attempt to unpack out-of-range type: %i" % type_val)
+
+class LTProtocolPBSocket:
+    """Defines a socket for LTProtocolPB messages."""
+
+    def __init__(self, lt_protocol_pb, host, port, timeout = 1):
+        """Create an LTProtocolPB socket.
+
+        @param lt_protocol_pb  LTProtocolPB object to restrict message types
+        @param host            socket host
+        @param port            socket port
+        @param timeout         timeout; raise exception if recv takes longer
+        """
+        self.lt_protocol_pb = lt_protocol_pb
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+        self.sock.settimeout(timeout)
+        self.packet = ""
+        self.plen = 0
+
+    def send(self, msg):
+        """Serialize message and send"""
+        self.sock.send(self.lt_protocol_pb.pack_with_header(msg))
+
+    def recv(self, expected_type = None):
+        """Receive and auto-unpack message; blocks until timeout.
+
+        @param expected_type: optional LTProtocolPB class to validate
+        @return msg: received Protobuf
+
+        If the connection breaks, raise an exception.
+        """
+        len_fmt = "> " + self.lt_protocol_pb.len_type
+        len_fmt_sz = struct.calcsize(len_fmt)
+        type_fmt = "> " + self.lt_protocol_pb.type_type
+        type_fmt_sz = struct.calcsize(type_fmt)
+        tot_sz = len_fmt_sz + type_fmt_sz
+
+        try:
+            # Get length / type
+            while self.plen < tot_sz:
+                data = self.sock.recv(4096)
+                if len(data) == 0:
+                    raise Exception("Zero-length buffer seen; assuming connection broken")
+                self.packet += data
+                self.plen += len(data)
+            lenNeeded = struct.unpack(len_fmt, self.packet[0:len_fmt_sz])[0]
+
+            # Get body
+            while self.plen < lenNeeded:
+                buf = channel.recv(4096)
+                if len(data) == 0:
+                    raise Exception("Zero-length buffer seen; assuming connection broken")
+                self.packet += data
+                self.plen += len(data)
+
+            buf = self.packet[0:lenNeeded]
+            self.packet = self.packet[lenNeeded:]
+            self.plen -= lenNeeded
+            type_val = struct.unpack(type_fmt, buf[len_fmt_sz:tot_sz])[0]
+            lt_msg = self.lt_protocol_pb.unpack_received_msg(type_val, buf[tot_sz:])
+
+            if type(lt_msg) != expected_type:
+                raise Exception("Wrong message type received: " % type(lt_msg))
+
+            return lt_msg
+
+        except socket.timeout:
+            print "Timeout while waiting for message: %s" % expected_type
+            raise socket.timeout
+
+    def __del__(self):
+        self.sock.close()
 
 class LTTwistedProtocol(Protocol):
     """A Twisted protocol whose messages begin with length and type."""
