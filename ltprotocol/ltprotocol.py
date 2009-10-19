@@ -40,7 +40,7 @@ class LTProtocol:
     """Defines a protocol whose messages are in the form length, type, and body."""
 
     def __init__(self, msg_types, len_type='H', type_type='B'):
-        """Creates an LTProtocol which recognizes a the specified list of LTMessage classes.
+        """Creates an LTProtocol which recognizes the specified list of LTMessage classes.
 
         @param msg_types  list of LTMessage classes which this protocol includes
         @param len_type   type of integer used for the length field (see struct doc for format chars)
