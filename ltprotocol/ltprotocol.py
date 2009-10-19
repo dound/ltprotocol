@@ -269,3 +269,15 @@ class LTTwistedServer(Factory):
         """Sends a LTMessage to the specified client connection."""
         buf = self.lt_protocol.pack_with_header(ltm)
         conn.transport.write(buf)
+
+def runLTTwistedServer(port, protocol, recv_callback):
+    """Creates and runs an LTTwistedServer.
+
+    @param port           the port to listen on
+    @param protocol       LTProtocol object
+    @param recv_callback  the function to call with received message content
+                          (takes two arguments: transport, msg)
+    """
+    server = LTTwistedServer(protocol, recv_callback)
+    server.listen(port)
+    reactor.run()
