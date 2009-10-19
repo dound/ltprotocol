@@ -36,7 +36,7 @@ class LTMessage:
         # Must be overridden by subclasses to return the unpacked message.
         pass
 
-class LTProtocol():
+class LTProtocol:
     """Defines a protocol whose messages are in the form length, type, and body."""
 
     def __init__(self, msg_types, len_type='H', type_type='B'):
@@ -170,8 +170,14 @@ class LTTwistedClient(ReconnectingClientFactory):
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
-        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda p : None
-        self.lost_conn_callback = lost_conn_callback if lost_conn_callback is not None else lambda p : None
+        if new_conn_callback is not None:
+            self.new_conn_callback = new_conn_callback
+        else:
+            self.new_conn_callback = lambda p : None
+        if lost_conn_callback is not None:
+            self.lost_conn_callback = lost_conn_callback
+        else:
+            self.lost_conn_callback = lambda p : None
         self.ip = None
         self.port = None
         self.packet = ""
@@ -232,8 +238,14 @@ class LTTwistedServer(Factory):
         """
         self.lt_protocol = lt_protocol
         self.recv_callback = recv_callback
-        self.new_conn_callback = new_conn_callback if new_conn_callback is not None else lambda p : None
-        self.lost_conn_callback = lost_conn_callback if lost_conn_callback is not None else lambda p : None
+        if new_conn_callback is not None:
+            self.new_conn_callback = new_conn_callback
+        else:
+            self.new_conn_callback = lambda p : None
+        if lost_conn_callback is not None:
+            self.lost_conn_callback = lost_conn_callback
+        else:
+            self.lost_conn_callback = lambda p : None
         self.connections = []
         self.numProtocols = 0
         self.verbose = verbose
