@@ -75,7 +75,6 @@ class LTTwistedProtocol(Protocol):
     def __init__(self):
         """Creates a """
         self.factory = None  # set when used by a factory
-        self.buf_accum = ''
         self.packet = ""
         self.plen = 0
         self.connected = False
