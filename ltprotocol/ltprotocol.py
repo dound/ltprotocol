@@ -53,14 +53,15 @@ class LTProtocol:
         self.len_type = len_type
         self.type_type = type_type
 
-    def pack_with_header(self, lmt):
-        """Creates a packed byte-string of this message given the body.
-        @param lmt  packed byte-string representing the message body
+    def pack_with_header(self, msg):
+        """Creates a packed byte-string given an LTMessage.
+
+        @param msg  LTMessage object
         """
-        body = lmt.pack()
+        body = msg.pack()
         fmt = '> ' + self.len_type + self.type_type
         sz = struct.calcsize(fmt) + len(body)
-        return struct.pack(fmt, sz, lmt.get_type()) + body
+        return struct.pack(fmt, sz, msg.get_type()) + body
 
     def unpack_received_msg(self, type_val, body):
         """Returns the next fully-received message from sock, or None if the type is unknown."""
